@@ -3,6 +3,7 @@ package br.com.zup.edu.pix.registra
 import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
 import br.com.zup.edu.pix.ChavePix
 import br.com.zup.edu.pix.ChaveRepository
+import br.com.zup.edu.pix.shared.grpc.ChavePixExistenteException
 import io.micronaut.validation.Validated
 import org.slf4j.LoggerFactory
 import javax.inject.Inject

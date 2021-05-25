@@ -8,31 +8,45 @@ option objc_class_prefix = "HLW";
 package br.com.zup.edu;
 
 service KeyManagerGrpcService {
-  rpc cadastra (ChavePixRequest) returns (ChavePixResponse) {}
+    rpc cadastra (ChavePixRequest) returns (ChavePixResponse) {}
+}
+
+service KeyManagerDeletaGrpcService {
+    rpc deleta (DeletaChavePixRequest) returns (DeletaChavePixResponse) {}
 }
 
 enum TipoDeChave {
-  UNKNOWN_CHAVE = 0;
-  CPF = 1;
-  CELULAR = 2;
-  EMAIL = 3;
-  ALEATORIA = 4;
+    UNKNOWN_CHAVE = 0;
+    CPF = 1;
+    CELULAR = 2;
+    EMAIL = 3;
+    ALEATORIA = 4;
 }
 
 enum TipoDeConta {
-  UNKNOWN_CONTA = 0;
-  CONTA_CORRENTE = 1;
-  CONTA_POUPANCA = 2;
+    UNKNOWN_CONTA = 0;
+    CONTA_CORRENTE = 1;
+    CONTA_POUPANCA = 2;
 }
 
 message ChavePixRequest {
-  string clienteId = 1;
-  TipoDeChave tipoDeChave = 2;
-  string chave = 3;
-  TipoDeConta tipoDeConta = 4;
+    string clienteId = 1;
+    TipoDeChave tipoDeChave = 2;
+    string chave = 3;
+    TipoDeConta tipoDeConta = 4;
 }
 
 message ChavePixResponse {
-  string clienteId = 1;
-  string pixId = 2;
+    string clienteId = 1;
+    string pixId = 2;
+}
+
+message DeletaChavePixRequest {
+    string pixId = 1;
+    string clienteId = 2;
+}
+
+message DeletaChavePixResponse {
+    string pixId = 1;
+    string clienteId = 2;
 }

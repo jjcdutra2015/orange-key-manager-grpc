@@ -1,6 +1,5 @@
 package br.com.zup.edu.pix.shared.grpc
 
-import br.com.zup.edu.pix.registra.ChavePixExistenteException
 import br.com.zup.edu.pix.registra.RegistraChaveEndpoint
 import com.google.rpc.BadRequest
 import com.google.rpc.Code
@@ -30,6 +29,7 @@ class ExceptionHandlerInterceptor : MethodInterceptor<RegistraChaveEndpoint, Any
                 is IllegalStateException -> Status.FAILED_PRECONDITION.withDescription(e.message).asRuntimeException()
                 is IllegalArgumentException -> Status.INVALID_ARGUMENT.withDescription(e.message).asRuntimeException()
                 is ChavePixExistenteException -> Status.ALREADY_EXISTS.withDescription(e.message).asRuntimeException()
+                is ChavePixNaoEncontradaException -> Status.NOT_FOUND.withDescription(e.message).asRuntimeException()
 //                is ConstraintViolationException -> Status.INVALID_ARGUMENT.withDescription(e.message)
 //                    .asRuntimeException()
                 is ConstraintViolationException -> handlerViolationException(e)
