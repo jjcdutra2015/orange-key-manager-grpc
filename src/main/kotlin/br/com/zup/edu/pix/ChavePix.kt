@@ -37,6 +37,10 @@ class ChavePix(
     @Embedded
     val conta: ContaAssociada
 ) {
+    fun atualizaPixBCB(key: String) {
+        this.chave = key
+    }
+
     @Id
     @GeneratedValue
     val id: UUID? = null

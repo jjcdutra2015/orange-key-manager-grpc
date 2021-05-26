@@ -1,9 +1,12 @@
 package br.com.zup.edu.pix.registra
 
+import br.com.zup.edu.integration.bcb.BcbClient
+import br.com.zup.edu.integration.bcb.CadastraChavePixBCBRequest
 import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
 import br.com.zup.edu.pix.ChavePix
 import br.com.zup.edu.pix.ChaveRepository
 import br.com.zup.edu.pix.shared.grpc.ChavePixExistenteException
+import io.micronaut.http.HttpStatus
 import io.micronaut.validation.Validated
 import org.slf4j.LoggerFactory
 import javax.inject.Inject
@@ -15,7 +18,8 @@ import javax.validation.Valid
 @Singleton
 class NovaChavePixService(
     @Inject val repository: ChaveRepository,
-    @Inject val itauClient: ContasDeClientesNoItauClient
+    @Inject val itauClient: ContasDeClientesNoItauClient,
+    @Inject val bcbClient: BcbClient
 ) {
 
     private val LOGGER = LoggerFactory.getLogger(this::class.java)
@@ -34,7 +38,17 @@ class NovaChavePixService(
 
         //3.Grava no banco de dados
         val chave = novaChave.toModel(conta)
+
         repository.save(chave)
+
+        val chavePixBCBRequest = CadastraChavePixBCBRequest.of(chave)
+
+        val cadastraChavePixResponse = bcbClient.cadastraChavePix(chavePixBCBRequest)
+        if (cadastraChavePixResponse.status != HttpStatus.CREATED) {
+            throw IllegalStateException("Erro ao cadastrar chave PIX no Banco Central do Brasil")
+        }
+
+        chave.atualizaPixBCB(cadastraChavePixResponse.body().key)
 
         return chave
     }

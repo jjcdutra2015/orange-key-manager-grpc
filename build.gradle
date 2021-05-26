@@ -48,7 +48,7 @@ dependencies {
 
     testImplementation("org.mockito:mockito-core")
 
-//    implementation("io.micronaut.xml:micronaut-jackson-xml")
+    implementation("io.micronaut.xml:micronaut-jackson-xml")
 }
 
 
