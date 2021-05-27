@@ -4,6 +4,7 @@ import br.com.zup.edu.ChavePixRequest
 import br.com.zup.edu.KeyManagerGrpcServiceGrpc
 import br.com.zup.edu.TipoDeChave
 import br.com.zup.edu.TipoDeConta
+import br.com.zup.edu.integration.bcb.*
 import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
 import br.com.zup.edu.integration.itau.DadosDaContaResponse
 import br.com.zup.edu.integration.itau.InstituicaoResponse
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 
@@ -39,6 +41,9 @@ internal class RegistraChaveEndpointTest(
 
     @Inject
     lateinit var itauClient: ContasDeClientesNoItauClient
+
+    @Inject
+    lateinit var bcbClient: BcbClient
 
     companion object {
         val CLIENTE_ID = UUID.randomUUID()
@@ -54,6 +59,9 @@ internal class RegistraChaveEndpointTest(
         //cenario
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChavePix(cadastraChavePixRequest()))
+            .thenReturn(HttpResponse.created(cadastraChavePixResponse()))
 
         //acao
         val chavePixResponse = grpcClient.cadastra(
@@ -151,6 +159,39 @@ internal class RegistraChaveEndpointTest(
         }
     }
 
+    @Test
+    fun `nao deve cadastrar chave pix com falha na api do bcb`() {
+        //cenario
+        `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
+            .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChavePix(cadastraChavePixRequest()))
+            .thenReturn(HttpResponse.unprocessableEntity())
+
+        //acao
+        val error = assertThrows<StatusRuntimeException> {
+            grpcClient.cadastra(
+                ChavePixRequest.newBuilder()
+                    .setClienteId(CLIENTE_ID.toString())
+                    .setTipoDeChave(TipoDeChave.EMAIL)
+                    .setChave("teste@zup.com.br")
+                    .setTipoDeConta(TipoDeConta.CONTA_CORRENTE)
+                    .build()
+            )
+        }
+
+        //validacao
+        with(error) {
+            assertEquals(Status.FAILED_PRECONDITION.code, status.code)
+            assertEquals("Erro ao cadastrar chave PIX no Banco Central do Brasil", status.description)
+        }
+    }
+
+    @MockBean(BcbClient::class)
+    fun bcbClient(): BcbClient? {
+        return Mockito.mock(BcbClient::class.java)
+    }
+
     @MockBean(ContasDeClientesNoItauClient::class)
     fun itauClient(): ContasDeClientesNoItauClient? {
         return Mockito.mock(ContasDeClientesNoItauClient::class.java)
@@ -174,4 +215,40 @@ internal class RegistraChaveEndpointTest(
         )
     }
 
+    private fun cadastraChavePixRequest(): CadastraChavePixBCBRequest {
+        return CadastraChavePixBCBRequest(
+            keyType = PixKeyType.EMAIL,
+            key = "teste@zup.com.br",
+            bankAccount = BankAccount(
+                participant = ContaAssociada.ITAU_UNIBANCO_ISPB,
+                branch = "1218",
+                accountNumber = "291900",
+                accountType = BankAccount.AccountType.CACC
+            ),
+            owner = Owner(
+                type = Owner.OwnerType.NATURAL_PERSON,
+                name = "Rafael pont",
+                taxIdNumber = "11111111111"
+            )
+        )
+    }
+
+    private fun cadastraChavePixResponse(): CadastraChavePixBCBResponse {
+        return CadastraChavePixBCBResponse(
+            keyType = PixKeyType.EMAIL.toString(),
+            key = "teste@zup.com.br",
+            bankAccount = BankAccount(
+                participant = ContaAssociada.ITAU_UNIBANCO_ISPB,
+                branch = "1218",
+                accountNumber = "291900",
+                accountType = BankAccount.AccountType.CACC
+            ),
+            owner = Owner(
+                type = Owner.OwnerType.NATURAL_PERSON,
+                name = "Rafael Ponte",
+                taxIdNumber = "11111111111"
+            ),
+            createdAt = LocalDateTime.now()
+        )
+    }
 }

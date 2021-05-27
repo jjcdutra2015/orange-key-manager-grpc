@@ -30,7 +30,7 @@ class DeletaChavePixService(val repository: ChaveRepository, val bcbClient: BcbC
 
         repository.deleteById(uuidPixId)
 
-        val deletaChavePixBCBRequest = DeletaChavePixBCBRequest.of(chavePix!!)
+        val deletaChavePixBCBRequest = DeletaChavePixBCBRequest(chavePix!!.chave)
 
         val deletaChavePixResponse = bcbClient.deletaChavePix(chavePix.chave, deletaChavePixBCBRequest)
         if (deletaChavePixResponse.status() != HttpStatus.OK) {

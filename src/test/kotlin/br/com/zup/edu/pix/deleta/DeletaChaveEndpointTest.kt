@@ -3,6 +3,9 @@ package br.com.zup.edu.pix.deleta
 import br.com.zup.edu.DeletaChavePixRequest
 import br.com.zup.edu.KeyManagerDeletaGrpcServiceGrpc
 import br.com.zup.edu.TipoDeConta
+import br.com.zup.edu.integration.bcb.BcbClient
+import br.com.zup.edu.integration.bcb.DeletaChavePixBCBRequest
+import br.com.zup.edu.integration.bcb.DeletaChavePixBCBResponse
 import br.com.zup.edu.pix.ChavePix
 import br.com.zup.edu.pix.ChaveRepository
 import br.com.zup.edu.pix.ContaAssociada
@@ -14,18 +17,27 @@ import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.micronaut.grpc.annotation.GrpcChannel
 import io.micronaut.grpc.server.GrpcServerChannel
+import io.micronaut.http.HttpResponse
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.Assert.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
+import org.mockito.Mockito.`when`
+import java.time.LocalDateTime
 import java.util.*
+import javax.inject.Inject
 
 @MicronautTest(transactional = false)
 internal class DeletaChaveEndpointTest(
     private val repository: ChaveRepository,
     private val grpcClient: KeyManagerDeletaGrpcServiceGrpc.KeyManagerDeletaGrpcServiceBlockingStub
 ) {
+
+    @Inject
+    lateinit var bcbClient: BcbClient
 
     companion object {
         val CLIENTE_ID = UUID.randomUUID()
@@ -39,6 +51,9 @@ internal class DeletaChaveEndpointTest(
     @Test
     fun `deve remover uma chave Pix existente`() {
         //cenario
+        `when`(bcbClient.deletaChavePix("11111111111", DeletaChavePixBCBRequest("11111111111")))
+            .thenReturn(HttpResponse.ok(DeletaChavePixBCBResponse("11111111111", "60701190", LocalDateTime.now())))
+
         val chavePix = repository.save(
             ChavePix(
                 clienteId = CLIENTE_ID,
@@ -103,6 +118,47 @@ internal class DeletaChaveEndpointTest(
             assertEquals(Status.INVALID_ARGUMENT.code, status.code)
             assertEquals("Invalid parameters", status.description)
         }
+    }
+
+    @Test
+    fun `nao deve remover chave pix quando nao conectar no BCB`() {
+        //cenario
+        `when`(bcbClient.deletaChavePix("11111111111", DeletaChavePixBCBRequest("11111111111")))
+            .thenReturn(HttpResponse.unprocessableEntity())
+
+        val chavePix = repository.save(
+            ChavePix(
+                clienteId = CLIENTE_ID,
+                tipo = TipoDeChave.CPF,
+                chave = "11111111111",
+                tipoDeConta = TipoDeConta.CONTA_CORRENTE,
+                conta = ContaAssociada(
+                    "UNIBANCO ITAU SA", "Rafael Ponte", "11111111111", "1218",
+                    "291900"
+                )
+            )
+        )
+
+        //acao
+        val error = assertThrows<StatusRuntimeException> {
+            grpcClient.deleta(
+                DeletaChavePixRequest.newBuilder()
+                    .setClienteId(chavePix.clienteId.toString())
+                    .setPixId(chavePix.id.toString())
+                    .build()
+            )
+        }
+
+        //validacao
+        with(error) {
+            assertEquals(Status.FAILED_PRECONDITION.code, status.code)
+            assertEquals("Erro ao remover chave PIX do Banco Central do Brasil", status.description)
+        }
+    }
+
+    @MockBean(BcbClient::class)
+    fun bcbClient(): BcbClient? {
+        return Mockito.mock(BcbClient::class.java)
     }
 
     @Factory
