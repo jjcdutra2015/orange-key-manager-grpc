@@ -7,12 +7,11 @@ import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 import javax.validation.Payload
 import kotlin.annotation.AnnotationRetention.RUNTIME
-import kotlin.annotation.AnnotationTarget.CLASS
-import kotlin.annotation.AnnotationTarget.TYPE
+import kotlin.annotation.AnnotationTarget.*
 import kotlin.reflect.KClass
 
 @MustBeDocumented
-@Target(CLASS, TYPE)
+@Target(CLASS, TYPE, VALUE_PARAMETER)
 @Retention(RUNTIME)
 @Constraint(validatedBy = [ValidPixKeyValidator::class])
 annotation class ValidPixKey(

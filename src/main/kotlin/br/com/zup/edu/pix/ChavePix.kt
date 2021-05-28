@@ -41,6 +41,10 @@ class ChavePix(
         this.chave = key
     }
 
+    fun pertenceAo(clienteIdAsUuid: UUID?): Boolean {
+        return clienteId.equals(clienteIdAsUuid)
+    }
+
     @Id
     @GeneratedValue
     val id: UUID? = null
