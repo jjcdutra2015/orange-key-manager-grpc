@@ -29,9 +29,9 @@ class ExceptionHandlerInterceptor : MethodInterceptor<RegistraChaveEndpoint, Any
                 is IllegalStateException -> Status.FAILED_PRECONDITION.withDescription(e.message).asRuntimeException()
                 is IllegalArgumentException -> Status.INVALID_ARGUMENT.withDescription(e.message).asRuntimeException()
                 is ChavePixExistenteException -> Status.ALREADY_EXISTS.withDescription(e.message).asRuntimeException()
-                is ChavePixNaoEncontradaException -> Status.NOT_FOUND.withDescription(e.message).asRuntimeException()
-//                is ConstraintViolationException -> Status.INVALID_ARGUMENT.withDescription(e.message)
-//                    .asRuntimeException()
+//                is ChavePixNaoEncontradaException -> Status.NOT_FOUND.withDescription(e.message).asRuntimeException()
+                is ConstraintViolationException -> Status.INVALID_ARGUMENT.withDescription(e.message)
+                    .asRuntimeException()
                 is ConstraintViolationException -> handlerViolationException(e)
                 else -> Status.UNKNOWN.withDescription(e.message).asRuntimeException()
             }

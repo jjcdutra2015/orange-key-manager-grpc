@@ -34,7 +34,7 @@ sealed class Filtro {
     }
 
     @Introspected
-    data class PorChave(@field:NotBlank @field:Size(max = 77) val chave: String) : Filtro() {
+    data class PorChave(@field:NotBlank @Size(max = 77) val chave: String) : Filtro() {
         override fun filtra(repository: ChaveRepository, bcbClient: BcbClient): ChavePixInfo {
             return repository.findByChave(chave)
                 .map(ChavePixInfo::of)
